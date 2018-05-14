@@ -12,7 +12,7 @@ Now, custom heap implementations and heaps in general are a pain to statically r
 
 **cts**: Now, a 0x0 allocation might not seem so bad, but this allocator breaks if you pass it a 0x0 allocation! Why? You have to reverse the allocator. For new allocations:
  - Big blocks (0x1000+) are allocated using `malloc` and prepended to a largeblocks linked list. The linked list elements are tags pointing to the blocks so they can be deallocated later, and these tags are allocated on the smallblocks heap.
- - Small blocks heap are allocated sequentially into bins of size 8196. Once a bin runs out of space, a new bin is allocated using `posix_memalign`.
+ - Small blocks heap are allocated **sequentially** with no metadata into bins of size 8196. Once a bin runs out of space, a new bin is allocated using `posix_memalign`.
 
 Suffice it to say, a 0x0 allocation means that the next allocation would lead to the same pointer! Which is exactly what happens when we allocate a transmission. We have found our vulnerability - double pointers.
 
