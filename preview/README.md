@@ -8,9 +8,27 @@ We open it up in IDA, and we notice that there's some funky `mmap`-ing going on,
 
 In GDB, we notice that the actual functionality of the program we observe over nc doesn't happen inside the code segment of the `preview` binary, so we deduce that it must be manually mapping a stage2 for the actual chal functionality.
 
-To take care of that, we can use the `vmmap` command in pwndbg and do a memory dump of the mapped segments to get a [binary](./a) for the real code.
+To take care of that, we can use the `vmmap` command in pwndbg and do a memory dump of the mapped segments to get a [binary](./a) for the real code. However, the imports part of the ELF header seems broken so we can't debug it :( It also means we need to reverse imports manually.
 
 There's a pretty obvious stack overflow for reading the command from the user, where the buffer is only 88 bytes big, but the read is 256 bytes in `process_command`.
+
+```C
+__int64 processRequest()
+{
+  const char *v0; // rdi
+  __int64 result; // rax
+  unsigned __int64 fsCookie; // rt1
+  unsigned int fd; // [rsp+Ch] [rbp-74h]
+  _BYTE *newlinePtr; // [rsp+10h] [rbp-70h]
+  char cmdbuf[88]; // [rsp+20h] [rbp-60h]
+  unsigned __int64 cookie; // [rsp+78h] [rbp-8h]
+
+  cookie = __readfsqword(0x28u);
+  if ( !fgets((__int64)cmdbuf, 256LL, *(_QWORD *)stdin) )
+    exit(0LL);
+  // ...
+}
+```
 
 We don't know the location that our stage2 is manual mapped at, but luckily on the remote server (and locally) we can do `HEAD /proc/self/maps` to leak it. That bypasses ASLR.
 
