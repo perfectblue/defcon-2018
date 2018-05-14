@@ -42,13 +42,14 @@ To find out how to open the file, I began performing dynamic analysis. Setting a
 
 Now that we have a open primitive, we want to get it to open our flag file. To do this, we can look in the main function and see that there is a check for the first character of the filename in the directory:
 
-```
-v11->d_name[0] > 47 && v11->d_name[0] <= 122
+```C
+ if ( curName->d_type == 8 && curName->d_name[0] > '/' && curName->d_name[0] <= 'z' )
+        fileList = (const char **)listAdd((__int64)fileList, curName->d_name);
 ```
 
 So we can actually change the lower bound of this ascii check to something higher than ord('d'). Thus, everything before secret_flag.txt will be cut off, and the flag will be the first file which then gets passed to open. I did this by flipping the bit at 0xfcf*8+6.
 
-Now, we have to read the flag that is loaded into memory with 2 bits left. After the flag contents is loaded into a buffer, it eventually gets freed. So I thought if you change free(buf) to printf(buf), then it would print the flag! We can do this with 2 bits too. However, when I tried this, I got: 
+Now, we have to read the flag that is loaded into memory with 2 bits left. After the flag contents is loaded into a buffer, it eventually gets freed. So I thought if you change free(buf) to printf(buf), then it would print the flag! We can do this with 2 bits too. However, when I tried this, I was greeted by *this*: 
 
 ```
 ALARM!!
@@ -60,19 +61,21 @@ Drats. What kind of alarm is this >:(
 
 So the correct way to do it is to change the newline check when iterating through the buffer from if ( *((_BYTE *)buf + v1) == 10 ) to if ( *((_BYTE *)buf + v1) != 10 ). This ensures that every character in buf gets put into the colors array, instead of just the last character. I did this using offset 0xe85*8. Next we look in main and see that there is a check to only print each filename once:
 
-```
-v5 = 0;
-    for ( k = 0; k <= 15 && v5 == 0 && qword_202040[k]; ++k )
-    {
-      if ( strstr(*j, *qword_202040[k]) )
-      {
-        printf("\x1B[%dm%s\x1B[0m\n", (unsigned int)(*((_DWORD *)qword_202040[k] + 2) + 30), *j, v4);
-        v5 = 1;
-      }
-    }
+```C
+foundColor = 0;
+for ( j = 0; j <= 15 && foundColor == 0 && colorTable[j]; ++j )
+{
+  if ( strstr(*pFilename, colorTable[j]->pszLine) )
+  {
+    printf("\x1B[%dm%s\x1B[0m\n", colorTable[j]->lastCharDecimalValue + 30, *pFilename, v4);
+    foundColor = 1;
+  }
+}
+if ( !foundColor )
+  puts(*pFilename);
  ```
 
-The colors array is iterated, however it only gets printed once because of v5. So, if we change v5 = 1 to v5 = 0, then everything in colors array will get printed. This is offset 0x10fb*8.
+The colors array is iterated, however it only gets printed once because of foundColor. So, if we change foundColor = 1 to foundColor = 0, then everything in colors array will get printed. This is offset 0x10fb*8.
 
 Now using these four bit flips, we run it on the server and get:
 
@@ -82,10 +85,10 @@ Now using these four bit flips, we run it on the server and get:
 
 Extracting the decimal values before m, ['80', '87', '98', '84', '90', '87', '94', '77', '91', '79', '82', '92', '83', '97', '97'], then converting it to ascii gives us gibberish. The reason is because of these two lines:
 
-```
-*((_DWORD *)v3 + 2) -= 48;
-and
-printf("\x1B[%dm%s\x1B[0m\n", (unsigned int)(*((_DWORD *)qword_202040[k] + 2) + 30), *j, v4);
+```C
+entry->lastCharDecimalValue -= '0';
+// and
+printf("\x1B[%dm%s\x1B[0m\n", colorTable[j]->lastCharDecimalValue + 30, *pFilename, v4);
 ```
 
 When the value is being loaded, it gets subtracted by 48. When it is being printed, 30 is added to its value. Therefore we have to add 18 to each decimal value for the flag.
