@@ -29,6 +29,7 @@ Next, we did some recon on ghettohackers, and looked at their website on wayback
 During all this, we all had a thought in our minds: what about that last `!` at the end? What is it there for?
 
 Finally, one of us had the genius revelation that maybe the positions of the exclamation marks was relevant.
+
 `4 ! 1 ! 18 ! 11 ! 0 ! 12 ! 15 ! 7 ! 9 ! 3`
 
 The hint on twitter said that it was a-z with spaces. Assuming the 0 in the middle was a space, we guessed that 1 -> a, 2 -> b, etc.
