@@ -1,14 +1,52 @@
 # Race Wars
 
-We are given a binary. Its functionality is quite boring. It lets you create tires, select chassis, engine, and transmission. Afterwards, you can modify these, and/or race, in which you always lose.
+*This challenge was solved by VoidMercy and cts, VoidMercy doing the dynamic reversing and cts doing the static reversing.*
+
+**VoidMercy**: We are given a binary. Its functionality is quite boring. It lets you create tires, select chassis, engine, and transmission. Afterwards, you can modify these, and/or race, in which you always lose.
 
 Lets start with static analysis. The functionality is also quite bland. There are a ton of branches to each of these options, which assigns different values for different chosen options.
 
 However, there is one big thing of interest you find while reversing. It is the function at 0x400bb6, which is called by all four options, to which values are being assigned. Diving into that function, we quickly find that it serves to allocate memory. There are two branches: if the requested size is greater than 0xfff, then it uses malloc() to allocate memory. However, if it is less, then the binary implements its own malloc implementation with posix_memalign. We also find that for the create tires option, we can control the size, and it mallocs size*32, so we have a controlled malloc size.
 
-Now, custom heap implementations and heaps in general are a pain to statically reverse, so I begin dynamic analysis. Breaking at 0x400b66 and 0x400bb2, I can view the malloc size request and returned pointer. I tried viewing the heap and structs for any overflows and OOBs, to no avail. Then I tried putting in garbage values for tire malloc sizes, and found that huge values causes malloc to return 0x0 and errors out. However, when putting in huge values, I also noticed that, since it gets multiplied by 32, the bits greater than 32 bits get truncated off. So if I can pass in a size of 0x100000000 to malloc, that gets truncated to 0x00000000. I tried entering the tire size 0x100000000/32, and sure enough, the size passed to malloc is 0x0. After playing around with this, I find that the first malloc(0x0) and another malloc(0x18) actually returns the same pointer! We have found our vulnerability - double pointers.
+Now, custom heap implementations and heaps in general are a pain to statically reverse, so I begin dynamic analysis. Breaking at 0x400b66 and 0x400bb2, I can view the malloc size request and returned pointer. I tried viewing the heap and structs for any overflows and OOBs, to no avail. Then I tried putting in garbage values for tire malloc sizes, and found that huge values causes malloc to return 0x0 and errors out. However, when putting in huge values, I also noticed that, since it gets multiplied by 32, the bits greater than 32 bits get truncated off. So if I can pass in a size of 0x100000000 to malloc, that gets truncated to 0x00000000. I tried entering the tire size 0x100000000/32, and sure enough, the size passed to malloc is 0x0. 
 
-So what can we do with this? The modifying transmission function sounds like a great read and write primitive, because it has built in functionalities to do that for us as long as gear size is large enough. So, if the gear size struct is also the same pointer as another struct we control, then we can modify gear size to an extremely large number, and gain arbitrary read/write primitive. The tire struct is perfect for this, since we control 8 bytes through editing tires:
+**cts**: Now, a 0x0 allocation might not seem so bad, but this allocator breaks if you pass it a 0x0 allocation! Why? You have to reverse the allocator. For new allocations:
+ - Big blocks (0x1000+) are allocated using `malloc` and prepended to a largeblocks linked list. The linked list elements are tags pointing to the blocks so they can be deallocated later, and these tags are allocated on the smallblocks heap.
+ - Small blocks heap are allocated sequentially into bins of size 8196. Once a bin runs out of space, a new bin is allocated using `posix_memalign`.
+
+Suffice it to say, a 0x0 allocation means that the next allocation would lead to the same pointer! Which is exactly what happens when we allocate a transmission. We have found our vulnerability - double pointers.
+
+Here's an idea of how the heap looks on the inside:
+```C
+struct __attribute__((aligned(8))) HeapListElem
+{
+  HeapListElem *flink;
+  void *block;
+};
+struct __attribute__((aligned(8))) HeapDestructorCallback
+{
+  void (__fastcall *funcptr)(void *);
+  void *param;
+  HeapDestructorCallback *flink;
+};
+struct __attribute__((aligned(8))) HeapBin
+{
+  void *pNextFreeLoc;
+  uint64_t pEnd;
+  HeapBin *flink;
+  uint64_t heapIndex;
+  uint64_t maxChunkSize;
+  HeapBin *pFreeHeap;
+  uint64_t field6;
+  HeapListElem *largeblocks;
+  HeapDestructorCallback *pDestructorCallbacks;
+  uint64_t field9;
+  char memory[8112];
+};
+```
+(Note: the HeapDestructorCallback list is never used, so it's not an option to overwrite a function pointer.)
+
+**VoidMercy**: So what can we do with this? The modifying transmission function sounds like a great read and write primitive, because it has built in functionalities to do that for us as long as gear size is large enough. So, if the gear size struct is also the same pointer as another struct we control, then we can modify gear size to an extremely large number, and gain arbitrary read/write primitive. The tire struct is perfect for this, since we control 8 bytes through editing tires:
 
 ```
 printf("modify what?\n\t(1) width\n\t(2) aspect ratio\n\t(3) construction\n\t(4) diameter\nCHOICE: ");
