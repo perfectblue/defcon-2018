@@ -2,13 +2,13 @@
 
 Category: Pwn
 
-In this challenge, are given a [binary](./preview/preview) `preview` and the corresponding [libc](./preview/libc.so.6). So at least it isn't blind this time around.
+In this challenge, are given a [binary](./preview) `preview` and the corresponding [libc](./libc.so.6). So at least it isn't blind this time around.
 
 We open it up in IDA, and we notice that there's some funky `mmap`-ing going on, and it jumps to the `mmap`ed region.
 
 In GDB, we notice that the actual functionality of the program we observe over nc doesn't happen inside the code segment of the `preview` binary, so we deduce that it must be manually mapping a stage2 for the actual chal functionality.
 
-To take care of that, we can use the `vmmap` command in pwndbg and do a memory dump of the mapped segments to get a [binary](./preview/a) for the real code.
+To take care of that, we can use the `vmmap` command in pwndbg and do a memory dump of the mapped segments to get a [binary](./a) for the real code.
 
 There's a pretty obvious stack overflow for reading the command from the user, where the buffer is only 88 bytes big, but the read is 256 bytes in `process_command`.
 
@@ -157,4 +157,4 @@ OOO{ZOMG, WhAT iF order-of-the-overfow IS ddtek?!?!?!? Plot Twist!}
 [*] Closed connection to cee810fa.quals2018.oooverflow.io port 31337
 ```
 
-[Final exploit script](./preview/preview.py)
+[Final exploit script](./preview.py)
