@@ -218,7 +218,7 @@ In `ooo_mmio_read`, we can read data from the `mmio_buffer[i] + x` address, wher
 i is controlled by bits 16-20 of the address, and the first 16 bits of the address control x. As there is a `(signed)` cast on x,
 x can also be negative, and is in range -32767 to 32767. The `size` argument is either 1, 2 or 4 depending on the size you read.
 
-In `ooo_mmio_read`, we have three operations, which are controlled by the bits 20-24 of the address. We also have control on
+In `ooo_mmio_write`, we have three operations, which are controlled by the bits 20-24 of the address. We also have control on
 a extra value `val` which is basically the value we are writing to the address inside the VM. This range of this value will depend
 on the `size` we are writing.
 
