@@ -48,7 +48,7 @@ struct __attribute__((aligned(8))) HeapBin
 
 **VoidMercy**: So what can we do with this? The modifying transmission function sounds like a great read and write primitive, because it has built in functionalities to do that for us as long as gear size is large enough. So, if the gear size struct is also the same pointer as another struct we control, then we can modify gear size to an extremely large number, and gain arbitrary read/write primitive. The tire struct is perfect for this, since we control 8 bytes through editing tires:
 
-```
+```C
 printf("modify what?\n\t(1) width\n\t(2) aspect ratio\n\t(3) construction\n\t(4) diameter\nCHOICE: ");
   __isoc99_scanf("%d", &v5);
   if ( v5 == 2 )
