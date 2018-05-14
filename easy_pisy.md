@@ -13,7 +13,8 @@ Here is a screenshot of some of the source that I took while solving the problem
 Ignore the circled stuff, that was me trying to find a vuln. Then, I looked up [openssl_verify](http://php.net/manual/en/function.openssl-verify.php):
 
 ```
-int openssl_verify ( string $data , string $signature , mixed $pub_key_id [, mixed $signature_alg = OPENSSL_ALGO_SHA1 ] )```
+int openssl_verify ( string $data , string $signature , mixed $pub_key_id [, mixed $signature_alg = OPENSSL_ALGO_SHA1 ] )
+```
 
 It seems that the default signature algorithm for this is SHA1! But SHA1 has been broken for PDFs with [SHATTERED](http://shattered.io/)
 
