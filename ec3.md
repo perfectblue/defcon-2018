@@ -240,7 +240,7 @@ Now if we do malloc(0x58) 2-3 times so that it requests from the 0x60 fastbin, i
 From here, we can calcualte the offset to pointers[0] and write the address of `malloc@GOT` to that, and then write to pointers[0] to overwrite
 malloc with win_function. This is the final exploit code that works in the local environment.
 
-```
+```c
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -296,7 +296,7 @@ so we need to copy the code remotely. We can gzip the compiled code, and send it
 once we connect. The gzip and base64 encoded file is around 400 kb, so if you get a AWS instance in the same region
 as the remote server, you can get it working under the timeout. This is the code for sending the exploit
 
-```
+```python
 import sys
 from pwn import *
 
