@@ -1,5 +1,5 @@
 # Say Hi
 
-Why was this problem even added in the last ~3 hours of the competition... Freakin free flag...
+This challenge was a thoughtful addition nearing the end of a difficult 48 hours challenge. Participants were asked to take a break and spend some time with their family for Mother's Day :)
 
-## Flag: Literally anything
+## Flag: anything was accepted, it was under an 'honor system'.
