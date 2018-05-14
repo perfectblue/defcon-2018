@@ -36,7 +36,7 @@ I first started with static analysis. Loading it into IDA, we begin to reverse e
 2) opens ".dircolors" and loads the value before a newline into a global array, we will call this the colors array
 3) iterates through filename array and prints the filename the color loaded in the colors array
 
-We only have four bits to flip, so that suggests that our changes will have to be within the existing code. First thing's first, the absolute necessity is to have an open filestream to the secret_flag.txt. Otherwise, we would never be able to access its contents. Since we only have four bits, we have to reuse code. Looking at step 2 above, in that function we see that the binary opens a file, reads it into a bufer, then gets loaded into a buffer.
+We only have four bits to flip, so that suggests that our changes will have to be within the existing code. First thing's first, the absolute necessity is to have an open filestream to the secret_flag.txt. Otherwise, we would never be able to access its contents. Since we only have four bits, we have to reuse code. Looking at step 2 above, in that function we see that the binary opens a file, reads it into a buffer, then gets loaded into a buffer.
 
 To find out how to open the file, I began performing dynamic analysis. Setting a breakpoint right before the open function where the string pointer to ".dircolors" is loaded into rdi, I find that right before it's loaded, rdi is pointing to a filename! More specifically, the first file in my directory. So, if we change this instruction to load the string pointer to some register we don't care about, then the open function performs open on the first file! I changed mov rdi, filepointer to mov rdx, filepointer using the bit flip at offset 0xdb0*8+5.
 
@@ -84,6 +84,7 @@ Extracting the decimal values before m, ['80', '87', '98', '84', '90', '87', '94
 
 ```
 *((_DWORD *)v3 + 2) -= 48;
+and
 printf("\x1B[%dm%s\x1B[0m\n", (unsigned int)(*((_DWORD *)qword_202040[k] + 2) + 30), *j, v4);
 ```
 
